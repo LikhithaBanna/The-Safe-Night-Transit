@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Portal — Safe-Night Transit</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <a href="/" class="logo">SNT <span class="logo-sep">|</span> <span class="logo-page">STUDENT</span></a>
+  <div class="nav-time" id="navTime"></div>
+</nav>
+
+<div class="page-wrap">
+
+  <!-- LEFT: Request + Status -->
+  <div class="col-left">
+
+    <!-- REQUEST RIDE -->
+    <div class="card" id="requestCard">
+      <div class="card-header">
+        <div class="card-title">🎓 REQUEST RIDE</div>
+        <div class="card-badge safe">SAFE ZONES ONLY</div>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label>Your Name</label>
+          <input id="sName" type="text" placeholder="e.g. Ananya Iyer" class="inp">
+        </div>
+        <div class="field">
+          <label>Student ID</label>
+          <input id="sId" type="text" placeholder="e.g. S21CS042" class="inp">
+        </div>
+        <div class="field">
+          <label>📍 Pickup Location</label>
+          <select id="sPickup" class="inp">
+            <option value="">— Select pickup —</option>
+            {% for loc in locations %}
+            <option value="{{ loc }}">{{ loc }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>🏠 Drop Location</label>
+          <select id="sDrop" class="inp">
+            <option value="">— Select drop —</option>
+            {% for loc in locations %}
+            <option value="{{ loc }}">{{ loc }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field full">
+          <label>Emergency Contact</label>
+          <input id="sContact" type="text" placeholder="Name: phone number" class="inp" value="Mom: 9876543210">
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="requestRide()">🚐 Request Safe Ride</button>
+      <p class="form-note">✅ All pickup points are campus-verified safe zones</p>
+    </div>
+
+    <!-- ACTIVE RIDE PANEL (hidden by default) -->
+    <div class="card" id="rideCard" style="display:none">
+      <div class="card-header">
+        <div class="card-title">🚐 YOUR RIDE</div>
+        <div class="card-badge" id="rideBadge">ASSIGNED</div>
+      </div>
+
+      <div class="ride-info-grid">
+        <div class="info-box">
+          <div class="info-label">Ride ID</div>
+          <div class="info-val mono" id="rideId">—</div>
+        </div>
+        <div class="info-box">
+          <div class="info-label">OTP (show driver)</div>
+          <div class="info-val mono otp" id="rideOtp">—</div>
+        </div>
+        <div class="info-box">
+          <div class="info-label">Van Assigned</div>
+          <div class="info-val" id="rideVan">—</div>
+        </div>
+        <div class="info-box">
+          <div class="info-label">Driver</div>
+          <div class="info-val" id="rideDriver">—</div>
+        </div>
+        <div class="info-box">
+          <div class="info-label">ETA</div>
+          <div class="info-val accent" id="rideEta">—</div>
+        </div>
+        <div class="info-box">
+          <div class="info-label">Status</div>
+          <div class="info-val" id="rideStatus">—</div>
+        </div>
+      </div>
+
+      <!-- Safety Score -->
+      <div class="safety-meter-wrap">
+        <div class="safety-meter-label">Van Safety Score</div>
+        <div class="safety-meter">
+          <div class="safety-bar" id="safetyBar"></div>
+        </div>
+        <div class="safety-status" id="safetyStatus">—</div>
+      </div>
+
+      <!-- PANIC BUTTON -->
+      <button class="btn-panic" id="panicBtn" onclick="triggerPanic()">
+        🚨 PANIC — EMERGENCY ALERT
+      </button>
+
+      <!-- SAFE ARRIVAL (shown when dropped) -->
+      <div id="arrivalSection" style="display:none; margin-top:16px;">
+        <div class="alert-box warn">⚠️ You have been dropped. Please confirm your safe arrival!</div>
+        <button class="btn-success" onclick="confirmArrival()" style="margin-top:10px;">✅ I Am Safe — Confirm Arrival</button>
+      </div>
+
+      <!-- FEEDBACK (shown after arrival) -->
+      <div id="feedbackSection" style="display:none; margin-top:16px;">
+        <div class="card-header"><div class="card-title">⭐ RATE YOUR RIDE</div></div>
+        <div class="star-row" id="starRow">
+          <span class="star" onclick="setRating(1)">★</span>
+          <span class="star" onclick="setRating(2)">★</span>
+          <span class="star" onclick="setRating(3)">★</span>
+          <span class="star" onclick="setRating(4)">★</span>
+          <span class="star" onclick="setRating(5)">★</span>
+        </div>
+        <textarea id="feedbackText" class="inp" placeholder="Any comments about your ride?" rows="2" style="margin-top:10px;width:100%"></textarea>
+        <button class="btn-primary" onclick="submitFeedback()" style="margin-top:10px;">Submit Feedback</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: Info panels -->
+  <div class="col-right">
+
+    <!-- SAFE ZONES MAP (simulated) -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🗺️ CAMPUS SAFE ZONES</div>
+        <div class="card-badge safe">10 ZONES ACTIVE</div>
+      </div>
+      <div class="campus-map">
+        <div class="map-zone" style="top:10%;left:40%">📚 Library</div>
+        <div class="map-zone" style="top:5%;left:70%">🚪 Main Gate</div>
+        <div class="map-zone" style="top:35%;left:15%">🏠 Hostel A</div>
+        <div class="map-zone" style="top:55%;left:20%">🏠 Hostel B</div>
+        <div class="map-zone" style="top:70%;left:10%">👩 Girls Hostel</div>
+        <div class="map-zone" style="top:80%;left:30%">👦 Boys Hostel</div>
+        <div class="map-zone" style="top:25%;left:55%">🏫 Academic</div>
+        <div class="map-zone" style="top:45%;left:60%">🔬 Lab Complex</div>
+        <div class="map-zone" style="top:60%;left:55%">☕ Cafeteria</div>
+        <div class="map-zone" style="top:75%;left:70%">🏃 Sports</div>
+        <!-- Van indicators (simulated) -->
+        <div class="van-marker" style="top:28%;left:53%">🚐 V1</div>
+        <div class="van-marker" style="top:8%;left:38%">🚐 V2</div>
+      </div>
+    </div>
+
+    <!-- HOW IT WORKS -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">📋 HOW IT WORKS</div></div>
+      <div class="steps">
+        <div class="step"><span class="step-n">1</span><div><strong>Request Ride</strong><br><small>Select pickup/drop from safe zones</small></div></div>
+        <div class="step"><span class="step-n">2</span><div><strong>Get Assigned</strong><br><small>Van assigned, OTP sent instantly</small></div></div>
+        <div class="step"><span class="step-n">3</span><div><strong>Board Van</strong><br><small>Show OTP to driver for verification</small></div></div>
+        <div class="step"><span class="step-n">4</span><div><strong>Safe Drop</strong><br><small>Confirm arrival after reaching destination</small></div></div>
+      </div>
+    </div>
+
+    <!-- ACTIVITY LOG -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">📡 ACTIVITY LOG</div></div>
+      <div id="activityLog" class="log-list">
+        <div class="log-item"><span class="log-time">--:--</span> System ready. Request a ride.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast"></div>
+
+<script src="/static/script.js"></script>
+<script>
+  let currentRideId = null;
+  let currentRating = 0;
+  let pollInterval = null;
+
+  function log(msg) {
+    const el = document.getElementById('activityLog');
+    const time = new Date().toTimeString().slice(0,8);
+    el.innerHTML = `<div class="log-item"><span class="log-time">${time}</span> ${msg}</div>` + el.innerHTML;
+  }
+
+  async function requestRide() {
+    const name = document.getElementById('sName').value.trim();
+    const sid = document.getElementById('sId').value.trim();
+    const pickup = document.getElementById('sPickup').value;
+    const drop = document.getElementById('sDrop').value;
+    const contact = document.getElementById('sContact').value.trim();
+
+    if (!name || !pickup || !drop) { showToast('Please fill all fields', 'warn'); return; }
+
+    log(`Requesting ride: ${pickup} → ${drop}...`);
+    const res = await api('/api/request_ride', { name, student_id: sid, pickup, drop, emergency_contact: contact });
+    if (!res.success) { showToast(res.error, 'danger'); return; }
+
+    currentRideId = res.ride_id;
+    showToast(res.message, 'success');
+    log(`✅ Ride ${res.ride_id} confirmed. OTP: ${res.otp}`);
+
+    // Show ride card
+    document.getElementById('requestCard').style.display = 'none';
+    document.getElementById('rideCard').style.display = 'block';
+    document.getElementById('rideId').textContent = res.ride_id;
+    document.getElementById('rideOtp').textContent = res.otp;
+    document.getElementById('rideVan').textContent = res.van_name || 'Waitlist';
+    document.getElementById('rideDriver').textContent = res.driver || 'TBD';
+    document.getElementById('rideEta').textContent = res.eta ? `${res.eta} min` : 'Awaiting van';
+
+    if (res.van_id) {
+      document.getElementById('rideBadge').textContent = 'VAN ASSIGNED';
+      document.getElementById('rideBadge').className = 'card-badge safe';
+    } else {
+      document.getElementById('rideBadge').textContent = 'WAITLIST';
+      document.getElementById('rideBadge').className = 'card-badge warn';
+    }
+
+    // Start polling
+    pollInterval = setInterval(pollRideStatus, 4000);
+  }
+
+  async function pollRideStatus() {
+    if (!currentRideId) return;
+    const res = await api(`/api/ride_status/${currentRideId}`, null, 'GET');
+    if (!res.success) return;
+    const ride = res.ride;
+    const statusEl = document.getElementById('rideStatus');
+    statusEl.textContent = ride.status.toUpperCase();
+
+    updateSafetyMeter(res.safety_score, res.safety_status);
+
+    if (ride.van_id) {
+      document.getElementById('rideVan').textContent = res.van ? res.van.name : ride.van_id;
+      document.getElementById('rideDriver').textContent = res.van ? res.van.driver : '—';
+      document.getElementById('rideEta').textContent = ride.eta ? `${ride.eta} min` : '—';
+    }
+
+    if (ride.status === 'dropped' || ride.status === 'completed') {
+      if (!ride.safe_arrived) {
+        document.getElementById('arrivalSection').style.display = 'block';
+        document.getElementById('panicBtn').style.display = 'none';
+      }
+    }
+    if (ride.status === 'completed' && ride.safe_arrived && !ride.feedback) {
+      document.getElementById('arrivalSection').style.display = 'none';
+      document.getElementById('feedbackSection').style.display = 'block';
+      clearInterval(pollInterval);
+    }
+  }
+
+  function updateSafetyMeter(score, status) {
+    const bar = document.getElementById('safetyBar');
+    const lbl = document.getElementById('safetyStatus');
+    bar.style.width = score + '%';
+    bar.className = 'safety-bar ' + (status === 'Safe' ? 'safe' : status === 'Warning' ? 'warn' : 'risk');
+    lbl.textContent = `${score}/100 — ${status}`;
+    lbl.className = 'safety-status ' + (status === 'Safe' ? 'text-safe' : status === 'Warning' ? 'text-warn' : 'text-danger');
+  }
+
+  async function triggerPanic() {
+    if (!currentRideId) return;
+    const btn = document.getElementById('panicBtn');
+    btn.textContent = '🚨 SENDING EMERGENCY ALERT...';
+    btn.disabled = true;
+    btn.style.animation = 'none';
+
+    log('🚨 PANIC BUTTON TRIGGERED!');
+    const res = await api('/api/panic', { ride_id: currentRideId });
+    if (res.success) {
+      showToast(res.message, 'danger');
+      log(`🚨 Alert sent. Camera: ${res.camera_active ? 'ACTIVATED' : 'N/A'}. Contact: ${res.contact_alerted}`);
+      btn.textContent = '🚨 EMERGENCY ALERT SENT — Admin Notified';
+    }
+  }
+
+  async function confirmArrival() {
+    if (!currentRideId) return;
+    const res = await api('/api/safe_arrival', { ride_id: currentRideId });
+    if (res.success) {
+      showToast(res.message, 'success');
+      log('✅ Safe arrival confirmed.');
+      document.getElementById('arrivalSection').style.display = 'none';
+      document.getElementById('feedbackSection').style.display = 'block';
+    }
+  }
+
+  function setRating(r) {
+    currentRating = r;
+    const stars = document.querySelectorAll('.star');
+    stars.forEach((s,i) => s.classList.toggle('active', i < r));
+  }
+
+  async function submitFeedback() {
+    if (!currentRiding) {
+      const comment = document.getElementById('feedbackText').value;
+      const res = await api('/api/submit_feedback', { ride_id: currentRideId, rating: currentRating, comment });
+      if (res.success) {
+        showToast(res.message, 'success');
+        document.getElementById('feedbackSection').innerHTML = '<div class="alert-box safe">✅ Thank you for your feedback!</div>';
+      }
+    }
+  }
+  // fix typo
+  const origSubmit = submitFeedback;
+  window.submitFeedback = async function() {
+    const comment = document.getElementById('feedbackText').value;
+    const res = await api('/api/submit_feedback', { ride_id: currentRideId, rating: currentRating || 5, comment });
+    if (res.success) {
+      showToast(res.message, 'success');
+      document.getElementById('feedbackSection').innerHTML = '<div class="alert-box safe" style="margin-top:10px">✅ Thank you for your feedback! Ride complete.</div>';
+    }
+  }
+
+  updateClock();
+  setInterval(updateClock, 1000);
+</script>
+</body>
+</html>

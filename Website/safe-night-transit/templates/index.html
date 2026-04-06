@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Safe-Night Transit — Campus Safety System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c14;
+    --surface: #0d1421;
+    --card: #111927;
+    --border: #1e2d42;
+    --accent: #00d4ff;
+    --accent2: #00ff88;
+    --warn: #ffb800;
+    --danger: #ff3d5a;
+    --text: #c8d8e8;
+    --muted: #556680;
+    --glow: rgba(0,212,255,0.15);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    overflow-x: hidden;
+  }
+
+  /* ── GRID BACKGROUND ── */
+  body::before {
+    content:'';
+    position:fixed;
+    inset:0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events:none;
+    z-index:0;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position:fixed; top:0; left:0; right:0;
+    background:rgba(8,12,20,0.9);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 0 40px;
+    height: 64px;
+    z-index: 100;
+  }
+  .logo {
+    font-family:'Rajdhani',sans-serif;
+    font-size:22px; font-weight:700;
+    color: var(--accent);
+    letter-spacing:2px;
+  }
+  .logo span { color:var(--accent2); }
+  .nav-links { display:flex; gap:32px; }
+  .nav-links a {
+    color:var(--muted); text-decoration:none;
+    font-size:13px; font-weight:500; letter-spacing:1px;
+    text-transform:uppercase;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color:var(--accent); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    text-align:center;
+    padding: 80px 20px 60px;
+    position:relative; z-index:1;
+  }
+  .hero-badge {
+    display:inline-flex; align-items:center; gap:8px;
+    background:rgba(0,212,255,0.08);
+    border:1px solid rgba(0,212,255,0.3);
+    color:var(--accent);
+    padding:6px 16px; border-radius:20px;
+    font-size:12px; font-weight:600; letter-spacing:2px;
+    text-transform:uppercase; margin-bottom:32px;
+    animation: pulse-border 2s ease-in-out infinite;
+  }
+  @keyframes pulse-border {
+    0%,100% { box-shadow: 0 0 0 0 rgba(0,212,255,0); }
+    50% { box-shadow: 0 0 0 6px rgba(0,212,255,0.1); }
+  }
+  .hero h1 {
+    font-family:'Rajdhani',sans-serif;
+    font-size: clamp(42px,8vw,88px);
+    font-weight:700; line-height:1.0;
+    letter-spacing:3px;
+    color:#fff;
+    margin-bottom:8px;
+  }
+  .hero h1 .hl { color:var(--accent); }
+  .hero h1 .hl2 { color:var(--accent2); }
+  .hero-sub {
+    font-size:18px; color:var(--muted);
+    font-weight:300; margin:20px 0 50px;
+    max-width:600px; line-height:1.6;
+  }
+
+  /* ── PORTAL CARDS ── */
+  .portal-grid {
+    display:grid; grid-template-columns: repeat(3,1fr);
+    gap:20px; max-width:900px; width:100%;
+    margin-bottom:60px;
+  }
+  @media(max-width:700px){ .portal-grid{grid-template-columns:1fr;} }
+
+  .portal-card {
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:32px 24px;
+    text-align:center;
+    cursor:pointer;
+    text-decoration:none;
+    display:flex; flex-direction:column; align-items:center; gap:16px;
+    transition: all 0.3s ease;
+    position:relative; overflow:hidden;
+  }
+  .portal-card::before {
+    content:'';
+    position:absolute; top:0; left:0; right:0;
+    height:3px;
+    background:var(--card-accent);
+    transform:scaleX(0); transform-origin:left;
+    transition:transform 0.3s ease;
+  }
+  .portal-card:hover { border-color:var(--card-accent); transform:translateY(-4px); box-shadow:0 20px 60px rgba(0,0,0,0.5); }
+  .portal-card:hover::before { transform:scaleX(1); }
+
+  .portal-card.student { --card-accent:var(--accent2); }
+  .portal-card.driver  { --card-accent:var(--accent);  }
+  .portal-card.admin   { --card-accent:var(--warn);    }
+
+  .card-icon {
+    width:60px; height:60px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:26px;
+  }
+  .student .card-icon { background:rgba(0,255,136,0.1); }
+  .driver .card-icon  { background:rgba(0,212,255,0.1); }
+  .admin .card-icon   { background:rgba(255,184,0,0.1); }
+
+  .portal-card h3 {
+    font-family:'Rajdhani',sans-serif;
+    font-size:20px; font-weight:700; letter-spacing:1px;
+    color:#fff;
+  }
+  .portal-card p { font-size:13px; color:var(--muted); line-height:1.5; }
+  .portal-btn {
+    display:inline-block;
+    padding:10px 24px; border-radius:8px;
+    font-size:13px; font-weight:600; letter-spacing:1px;
+    border:1px solid;
+    transition:all 0.2s;
+    margin-top:8px;
+  }
+  .student .portal-btn { border-color:var(--accent2); color:var(--accent2); }
+  .driver .portal-btn  { border-color:var(--accent);  color:var(--accent);  }
+  .admin .portal-btn   { border-color:var(--warn);    color:var(--warn);    }
+  .portal-card:hover .portal-btn { background:var(--card-accent); color:#000; }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    display:flex; gap:40px; justify-content:center;
+    flex-wrap:wrap; margin-bottom:20px;
+  }
+  .stat {
+    text-align:center;
+  }
+  .stat-val {
+    font-family:'JetBrains Mono',monospace;
+    font-size:28px; font-weight:600; color:var(--accent);
+  }
+  .stat-label { font-size:12px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
+
+  /* ── FEATURES ── */
+  .features {
+    padding: 80px 40px;
+    max-width:1100px; margin:0 auto;
+    position:relative; z-index:1;
+  }
+  .section-title {
+    font-family:'Rajdhani',sans-serif;
+    font-size:36px; font-weight:700; letter-spacing:2px;
+    text-align:center; margin-bottom:12px;
+    color:#fff;
+  }
+  .section-sub { text-align:center; color:var(--muted); margin-bottom:52px; font-size:15px; }
+
+  .features-grid {
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:20px;
+  }
+  .feat-card {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; padding:28px;
+    transition: all 0.3s;
+  }
+  .feat-card:hover { border-color:var(--accent); box-shadow:0 0 30px var(--glow); }
+  .feat-icon { font-size:28px; margin-bottom:16px; }
+  .feat-card h4 { font-family:'Rajdhani',sans-serif; font-size:18px; font-weight:700; color:#fff; margin-bottom:8px; }
+  .feat-card p { font-size:13px; color:var(--muted); line-height:1.6; }
+
+  /* ── SAFETY LAYERS ── */
+  .safety-section {
+    padding:80px 40px;
+    background:var(--surface);
+    position:relative; z-index:1;
+  }
+  .safety-timeline {
+    max-width:700px; margin:0 auto;
+    display:flex; flex-direction:column; gap:0;
+  }
+  .timeline-item {
+    display:flex; gap:24px; align-items:flex-start;
+    padding:24px 0;
+    border-bottom:1px solid var(--border);
+    animation: fadeSlide 0.5s ease forwards;
+    opacity:0;
+  }
+  @keyframes fadeSlide { to { opacity:1; transform:translateY(0); } from { opacity:0; transform:translateY(20px); } }
+  .timeline-item:nth-child(1){ animation-delay:0.1s; }
+  .timeline-item:nth-child(2){ animation-delay:0.2s; }
+  .timeline-item:nth-child(3){ animation-delay:0.3s; }
+
+  .tl-phase {
+    min-width:100px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px; font-weight:600;
+    letter-spacing:1px;
+    padding:4px 12px; border-radius:4px;
+    text-align:center; margin-top:4px;
+  }
+  .tl-before { background:rgba(0,255,136,0.1); color:var(--accent2); border:1px solid var(--accent2); }
+  .tl-during { background:rgba(0,212,255,0.1); color:var(--accent); border:1px solid var(--accent); }
+  .tl-after  { background:rgba(255,184,0,0.1); color:var(--warn); border:1px solid var(--warn); }
+
+  .tl-content h4 { font-family:'Rajdhani',sans-serif; font-size:17px; font-weight:700; color:#fff; margin-bottom:6px; }
+  .tl-content p  { font-size:13px; color:var(--muted); line-height:1.6; }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align:center; padding:32px;
+    color:var(--muted); font-size:13px;
+    border-top:1px solid var(--border);
+    position:relative; z-index:1;
+  }
+  footer span { color:var(--accent); }
+
+  /* ── LIVE STATUS TICKER ── */
+  .ticker {
+    background:rgba(0,212,255,0.06);
+    border-top:1px solid rgba(0,212,255,0.2);
+    border-bottom:1px solid rgba(0,212,255,0.2);
+    overflow:hidden; padding:10px 0;
+    position:relative; z-index:1;
+  }
+  .ticker-inner {
+    display:flex; gap:60px;
+    white-space:nowrap;
+    animation:scroll 20s linear infinite;
+  }
+  @keyframes scroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+  .tick-item {
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px; color:var(--accent);
+    display:flex; align-items:center; gap:8px;
+  }
+  .tick-dot { width:6px; height:6px; border-radius:50%; background:var(--accent2); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">SAFE<span>NIGHT</span> TRANSIT</div>
+  <div class="nav-links">
+    <a href="#portals">Portals</a>
+    <a href="#features">Features</a>
+    <a href="#safety">Safety</a>
+  </div>
+</nav>
+
+<!-- TICKER -->
+<div class="ticker" style="margin-top:64px;">
+  <div class="ticker-inner">
+    <div class="tick-item"><span class="tick-dot"></span>SYSTEM ONLINE — 22:00 HRS</div>
+    <div class="tick-item"><span class="tick-dot"></span>VAN ALPHA — EN ROUTE — 3 STOPS</div>
+    <div class="tick-item"><span class="tick-dot"></span>VAN BETA — AVAILABLE — MAIN GATE</div>
+    <div class="tick-item"><span class="tick-dot"></span>ALL SAFE ZONES ACTIVE</div>
+    <div class="tick-item"><span class="tick-dot"></span>CAMERA SYSTEM — STANDBY</div>
+    <div class="tick-item"><span class="tick-dot"></span>SYSTEM ONLINE — 22:00 HRS</div>
+    <div class="tick-item"><span class="tick-dot"></span>VAN ALPHA — EN ROUTE — 3 STOPS</div>
+    <div class="tick-item"><span class="tick-dot"></span>VAN BETA — AVAILABLE — MAIN GATE</div>
+    <div class="tick-item"><span class="tick-dot"></span>ALL SAFE ZONES ACTIVE</div>
+    <div class="tick-item"><span class="tick-dot"></span>CAMERA SYSTEM — STANDBY</div>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero" id="portals">
+  <div class="hero-badge">🛡️ Campus Security System • Active 10PM–2AM</div>
+  <h1>SAFE<span class="hl">NIGHT</span><br><span class="hl2">TRANSIT</span></h1>
+  <p class="hero-sub">Safety-first on-demand campus shuttle system. Intelligent ride pooling, real-time monitoring, and emergency response—all in one platform.</p>
+
+  <div class="stats-bar">
+    <div class="stat"><div class="stat-val">10</div><div class="stat-label">Safe Zones</div></div>
+    <div class="stat"><div class="stat-val">3</div><div class="stat-label">Active Vans</div></div>
+    <div class="stat"><div class="stat-val">24/7</div><div class="stat-label">Monitoring</div></div>
+    <div class="stat"><div class="stat-val">4s</div><div class="stat-label">Panic Response</div></div>
+  </div>
+
+  <div class="portal-grid">
+    <a href="/student" class="portal-card student">
+      <div class="card-icon">🎓</div>
+      <h3>STUDENT PORTAL</h3>
+      <p>Request rides, track your van, trigger emergency alerts, and confirm safe arrival.</p>
+      <span class="portal-btn">Enter Portal →</span>
+    </a>
+    <a href="/driver" class="portal-card driver">
+      <div class="card-icon">🚐</div>
+      <h3>DRIVER PORTAL</h3>
+      <p>Manage shifts, verify passengers via OTP, view pooled routes, and update locations.</p>
+      <span class="portal-btn">Enter Portal →</span>
+    </a>
+    <a href="/admin" class="portal-card admin">
+      <div class="card-icon">🖥️</div>
+      <h3>ADMIN DASHBOARD</h3>
+      <p>Monitor all rides, manage panic alerts, view safety scores, and control cameras.</p>
+      <span class="portal-btn">Enter Portal →</span>
+    </a>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <h2 class="section-title">CORE CAPABILITIES</h2>
+  <p class="section-sub">Every feature is engineered with safety as the primary design constraint</p>
+  <div class="features-grid">
+    <div class="feat-card">
+      <div class="feat-icon">🔒</div>
+      <h4>Safe Zone Pickup</h4>
+      <p>Rides can only be requested from verified campus safe zones. If unsafe location detected, system suggests nearest safe pickup point.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🔑</div>
+      <h4>Dual OTP Verification</h4>
+      <p>Students verify their van, drivers verify the student. Two-way identity check prevents unauthorized boarding.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🗺️</div>
+      <h4>Route Deviation Detection</h4>
+      <p>Real-time comparison of planned vs actual route. Any deviation instantly triggers admin alert and camera activation.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🚨</div>
+      <h4>Panic Button + Escalation</h4>
+      <p>One-tap emergency alert to admin and security. Automatically activates van camera and notifies emergency contact.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📡</div>
+      <h4>Smart Camera System</h4>
+      <p>Cameras activate ONLY during emergencies—panic, deviation, or suspicious delays. Full access control and event logging.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🏊</div>
+      <h4>Intelligent Ride Pooling</h4>
+      <p>Nearest-neighbor route optimization pools multiple students safely. Dynamic route updates as new requests come in.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📊</div>
+      <h4>Live Safety Score</h4>
+      <p>Each van carries a Safety Score (0–100) based on route adherence, panic history, and delays. Displayed as Safe / Warning / Risk.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">✅</div>
+      <h4>Safe Arrival Confirmation</h4>
+      <p>Students must confirm arrival after drop. If no response within 3 minutes, admin is automatically alerted.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🌡️</div>
+      <h4>Risk Zone Heatmap</h4>
+      <p>Admin panel visualizes high-demand and high-risk pickup zones to proactively position vans and security.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SAFETY LAYERS -->
+<section class="safety-section" id="safety">
+  <h2 class="section-title">SAFETY IN THREE PHASES</h2>
+  <p class="section-sub">Protection before, during, and after every ride</p>
+  <div class="safety-timeline">
+    <div class="timeline-item">
+      <div class="tl-phase tl-before">BEFORE</div>
+      <div class="tl-content">
+        <h4>Pre-Ride Safety Checks</h4>
+        <p>Safe zone validation, van/driver assignment, OTP generation, emergency contact registration, and wait-time monitoring. No ride begins without full identity verification.</p>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="tl-phase tl-during">DURING</div>
+      <div class="tl-content">
+        <h4>Active Monitoring & Response</h4>
+        <p>Continuous route deviation detection, live safety score, panic button with camera activation, trusted contact alerts, and real-time admin visibility into every active ride.</p>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="tl-phase tl-after">AFTER</div>
+      <div class="tl-content">
+        <h4>Post-Ride Verification</h4>
+        <p>Mandatory safe arrival confirmation, timeout alerts if student doesn't respond, feedback collection to update driver trust score, and full event audit trail.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>Safe-Night Transit &copy; 2024 — Built for Campus Safety &nbsp;|&nbsp; Powered by <span>Flask + Python</span> &nbsp;|&nbsp; Running 10 PM – 2 AM</p>
+</footer>
+
+</body>
+</html>

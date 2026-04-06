@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Driver Portal — Safe-Night Transit</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <a href="/" class="logo">SNT <span class="logo-sep">|</span> <span class="logo-page">DRIVER</span></a>
+  <div class="nav-time" id="navTime"></div>
+</nav>
+
+<div class="page-wrap">
+  <div class="col-left">
+
+    <!-- VAN SELECTION + SHIFT CONTROL -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🚐 VAN CONTROL</div>
+        <div id="shiftBadge" class="card-badge warn">SHIFT OFF</div>
+      </div>
+
+      <div class="field" style="margin-bottom:16px">
+        <label>Select Your Van</label>
+        <select id="vanSelect" class="inp" onchange="loadVanInfo()">
+          <option value="">— Select van —</option>
+          {% for vid, van in vans.items() %}
+          <option value="{{ vid }}">{{ van.name }} — {{ van.driver }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-success" onclick="startShift()">▶ Start Shift</button>
+        <button class="btn-danger" onclick="endShift()">■ End Shift</button>
+      </div>
+
+      <!-- Van Status -->
+      <div id="vanStatus" style="display:none; margin-top:20px;">
+        <div class="ride-info-grid">
+          <div class="info-box">
+            <div class="info-label">Current Location</div>
+            <div class="info-val mono" id="vanLoc">—</div>
+          </div>
+          <div class="info-box">
+            <div class="info-label">Passengers</div>
+            <div class="info-val" id="vanPax">—</div>
+          </div>
+          <div class="info-box">
+            <div class="info-label">Seats Free</div>
+            <div class="info-val accent" id="vanSeats">—</div>
+          </div>
+          <div class="info-box">
+            <div class="info-label">Safety Score</div>
+            <div class="info-val" id="vanScore">—</div>
+          </div>
+        </div>
+
+        <div class="safety-meter-wrap" style="margin-top:12px">
+          <div class="safety-meter-label">Safety Score</div>
+          <div class="safety-meter">
+            <div class="safety-bar safe" id="driverSafetyBar" style="width:100%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- UPDATE LOCATION -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">📍 UPDATE VAN LOCATION</div></div>
+      <div class="field">
+        <label>Current Location</label>
+        <select id="locSelect" class="inp">
+          <option value="">— Select location —</option>
+          <option>Library</option><option>Main Gate</option>
+          <option>Hostel A</option><option>Hostel B</option>
+          <option>Girls Hostel</option><option>Boys Hostel</option>
+          <option>Academic Block</option><option>Lab Complex</option>
+          <option>Cafeteria</option><option>Sports Complex</option>
+        </select>
+      </div>
+      <button class="btn-primary" onclick="updateLocation()" style="margin-top:8px">📍 Update Location</button>
+      <p class="form-note">⚠️ Deviating from planned route triggers safety alert</p>
+    </div>
+
+    <!-- OTP VERIFICATION -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🔑 VERIFY STUDENT (OTP)</div>
+        <div class="card-badge info">BOARDING CHECK</div>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Ride ID</label>
+          <input id="otpRideId" class="inp" placeholder="e.g. R0001">
+        </div>
+        <div class="field">
+          <label>Student OTP</label>
+          <input id="otpCode" class="inp mono" placeholder="4-digit OTP" maxlength="4">
+        </div>
+      </div>
+      <button class="btn-primary" onclick="verifyOtp()" style="margin-top:8px">🔑 Verify & Board Student</button>
+      <div id="otpResult" style="margin-top:12px"></div>
+    </div>
+
+  </div>
+
+  <div class="col-right">
+
+    <!-- PASSENGER LIST + ROUTE -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">👥 PASSENGER LIST & ROUTE</div>
+        <button class="btn-sm" onclick="refreshVan()">↻ Refresh</button>
+      </div>
+      <div id="passengerList">
+        <div class="empty-state">No passengers yet. Start your shift to begin.</div>
+      </div>
+    </div>
+
+    <!-- PLANNED ROUTE -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">🗺️ PLANNED ROUTE</div></div>
+      <div id="routeList">
+        <div class="empty-state">Route will appear once passengers are assigned.</div>
+      </div>
+    </div>
+
+    <!-- MARK DROP -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">✅ MARK PASSENGER DROP</div></div>
+      <div class="form-grid">
+        <div class="field full">
+          <label>Ride ID to Drop</label>
+          <input id="dropRideId" class="inp" placeholder="e.g. R0001">
+        </div>
+      </div>
+      <button class="btn-success" onclick="markDrop()" style="margin-top:8px">✅ Mark as Dropped</button>
+      <div id="dropResult" style="margin-top:12px"></div>
+    </div>
+
+    <!-- ACTIVITY -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">📡 DRIVER LOG</div></div>
+      <div id="driverLog" class="log-list">
+        <div class="log-item"><span class="log-time">--:--</span> Driver portal ready.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<script src="/static/script.js"></script>
+<script>
+  let selectedVan = null;
+  let pollInterval = null;
+
+  function dlog(msg) {
+    const el = document.getElementById('driverLog');
+    const time = new Date().toTimeString().slice(0,8);
+    el.innerHTML = `<div class="log-item"><span class="log-time">${time}</span> ${msg}</div>` + el.innerHTML;
+  }
+
+  function loadVanInfo() {
+    selectedVan = document.getElementById('vanSelect').value;
+    if (selectedVan) refreshVan();
+  }
+
+  async function refreshVan() {
+    if (!selectedVan) return;
+    const res = await api(`/api/driver/van_status/${selectedVan}`, null, 'GET');
+    if (!res.success) return;
+    const van = res.van;
+
+    document.getElementById('vanStatus').style.display = 'block';
+    document.getElementById('vanLoc').textContent = van.current_location;
+    document.getElementById('vanPax').textContent = van.passengers.length;
+    document.getElementById('vanSeats').textContent = van.capacity - van.passengers.length;
+    document.getElementById('vanScore').textContent = res.safety_score + ' — ' + res.safety_status;
+
+    const bar = document.getElementById('driverSafetyBar');
+    bar.style.width = res.safety_score + '%';
+    bar.className = 'safety-bar ' + (res.safety_status === 'Safe' ? 'safe' : res.safety_status === 'Warning' ? 'warn' : 'risk');
+
+    // Shift badge
+    if (van.shift_active) {
+      document.getElementById('shiftBadge').textContent = 'SHIFT ACTIVE';
+      document.getElementById('shiftBadge').className = 'card-badge safe';
+    } else {
+      document.getElementById('shiftBadge').textContent = 'SHIFT OFF';
+      document.getElementById('shiftBadge').className = 'card-badge warn';
+    }
+
+    // Passengers
+    let pHtml = '';
+    if (res.passengers.length === 0) {
+      pHtml = '<div class="empty-state">No passengers assigned.</div>';
+    } else {
+      res.passengers.forEach(p => {
+        const statusCls = p.status === 'boarded' ? 'safe' : p.status === 'waiting' ? 'warn' : 'muted';
+        pHtml += `
+          <div class="pax-card">
+            <div class="pax-info">
+              <strong>${p.name}</strong> <span class="mono small">${p.id}</span>
+              <div class="pax-route">${p.pickup} → ${p.drop}</div>
+              <div class="pax-otp">OTP: <span class="mono">${p.otp}</span></div>
+            </div>
+            <div class="card-badge ${statusCls}">${p.status.toUpperCase()}</div>
+          </div>`;
+      });
+    }
+    document.getElementById('passengerList').innerHTML = pHtml;
+
+    // Route
+    let rHtml = '';
+    if (res.route.length === 0) {
+      rHtml = '<div class="empty-state">No route planned yet.</div>';
+    } else {
+      res.route.forEach((stop, i) => {
+        const icon = stop[0] === 'pickup' ? '🟢' : '🔴';
+        rHtml += `<div class="route-stop">
+          <span class="route-idx">${i+1}</span>
+          ${icon} <strong>${stop[0].toUpperCase()}</strong> ${stop[2]}
+          <span class="mono small">(${stop[1]})</span>
+        </div>`;
+      });
+    }
+    document.getElementById('routeList').innerHTML = rHtml;
+  }
+
+  async function startShift() {
+    if (!selectedVan) { showToast('Select a van first', 'warn'); return; }
+    const res = await api('/api/driver/start_shift', { van_id: selectedVan });
+    if (res.success) {
+      showToast(res.message, 'success');
+      dlog('▶ Shift started.');
+      refreshVan();
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = setInterval(refreshVan, 5000);
+    }
+  }
+
+  async function endShift() {
+    if (!selectedVan) { showToast('Select a van first', 'warn'); return; }
+    const res = await api('/api/driver/end_shift', { van_id: selectedVan });
+    if (res.success) {
+      showToast(res.message, 'success');
+      dlog('■ Shift ended.');
+      if (pollInterval) clearInterval(pollInterval);
+      refreshVan();
+    } else {
+      showToast(res.error, 'danger');
+    }
+  }
+
+  async function verifyOtp() {
+    if (!selectedVan) { showToast('Select your van first', 'warn'); return; }
+    const rid = document.getElementById('otpRideId').value.trim();
+    const otp = document.getElementById('otpCode').value.trim();
+    if (!rid || !otp) { showToast('Enter Ride ID and OTP', 'warn'); return; }
+
+    dlog(`Verifying OTP for ${rid}...`);
+    const res = await api('/api/driver/verify_otp', { van_id: selectedVan, ride_id: rid, otp });
+    const resultEl = document.getElementById('otpResult');
+    if (res.success) {
+      resultEl.innerHTML = `<div class="alert-box safe">✅ ${res.message}</div>`;
+      showToast(res.message, 'success');
+      dlog(`✅ ${res.message}`);
+      refreshVan();
+    } else {
+      resultEl.innerHTML = `<div class="alert-box danger">❌ ${res.error}</div>`;
+      showToast(res.error, 'danger');
+      dlog(`❌ OTP failed for ${rid}`);
+    }
+    document.getElementById('otpCode').value = '';
+  }
+
+  async function updateLocation() {
+    if (!selectedVan) { showToast('Select your van', 'warn'); return; }
+    const loc = document.getElementById('locSelect').value;
+    if (!loc) { showToast('Select a location', 'warn'); return; }
+    const res = await api('/api/driver/update_location', { van_id: selectedVan, location: loc });
+    if (res.success) {
+      showToast(`Location updated: ${loc}`, 'success');
+      dlog(`📍 Location updated: ${loc}`);
+      if (res.van && res.van.route_deviation) {
+        showToast('⚠️ ROUTE DEVIATION DETECTED — Admin alerted!', 'danger');
+        dlog('⚠️ Route deviation alert triggered!');
+      }
+      refreshVan();
+    }
+  }
+
+  async function markDrop() {
+    if (!selectedVan) { showToast('Select your van', 'warn'); return; }
+    const rid = document.getElementById('dropRideId').value.trim();
+    if (!rid) { showToast('Enter Ride ID', 'warn'); return; }
+    const res = await api('/api/driver/mark_drop', { van_id: selectedVan, ride_id: rid });
+    const el = document.getElementById('dropResult');
+    if (res.success) {
+      el.innerHTML = `<div class="alert-box safe">${res.message}</div>`;
+      showToast(res.message, 'success');
+      dlog(`✅ Dropped ${rid}. Awaiting student confirmation.`);
+      refreshVan();
+    } else {
+      el.innerHTML = `<div class="alert-box danger">${res.error || 'Error'}</div>`;
+    }
+    document.getElementById('dropRideId').value = '';
+  }
+
+  updateClock();
+  setInterval(updateClock, 1000);
+</script>
+</body>
+</html>

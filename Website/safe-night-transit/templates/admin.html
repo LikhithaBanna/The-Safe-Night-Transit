@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard — Safe-Night Transit</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <a href="/" class="logo">SNT <span class="logo-sep">|</span> <span class="logo-page">ADMIN</span></a>
+  <div style="display:flex;align-items:center;gap:16px">
+    <div id="panicIndicator" class="panic-indicator" style="display:none">
+      🚨 ACTIVE PANIC
+    </div>
+    <div class="nav-time" id="navTime"></div>
+  </div>
+</nav>
+
+<!-- PANIC ALERT BANNER -->
+<div id="panicBanner" style="display:none" class="panic-banner">
+  <div class="panic-banner-inner">
+    🚨 <strong>PANIC ALERT ACTIVE</strong> — Check alerts below immediately
+  </div>
+</div>
+
+<div class="admin-wrap">
+
+  <!-- TOP STATS ROW -->
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card">
+      <div class="stat-num" id="statActive">0</div>
+      <div class="stat-lbl">Active Rides</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statWait">0</div>
+      <div class="stat-lbl">Waitlist</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statDone">0</div>
+      <div class="stat-lbl">Completed</div>
+    </div>
+    <div class="stat-card danger-card">
+      <div class="stat-num danger-num" id="statPanic">0</div>
+      <div class="stat-lbl">Active Panics</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num accent2-num" id="statTotal">0</div>
+      <div class="stat-lbl">Total Rides</div>
+    </div>
+  </div>
+
+  <!-- MAIN ADMIN GRID -->
+  <div class="admin-grid">
+
+    <!-- COL 1: Vans + Panic -->
+    <div class="admin-col">
+
+      <!-- VAN STATUS -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🚐 VAN STATUS</div>
+          <button class="btn-sm" onclick="refreshDash()">↻ Refresh</button>
+        </div>
+        <div id="vanGrid"></div>
+      </div>
+
+      <!-- PANIC ALERTS -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🚨 PANIC ALERTS</div>
+          <div class="card-badge danger" id="panicCount">0</div>
+        </div>
+        <div id="panicList">
+          <div class="empty-state">No active panic alerts.</div>
+        </div>
+      </div>
+
+      <!-- CAMERA CONTROL -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📡 CAMERA CONTROL</div>
+          <div class="card-badge warn">RESTRICTED ACCESS</div>
+        </div>
+        <p class="form-note" style="margin-bottom:12px">Camera activates ONLY during: panic, route deviation, suspicious delay</p>
+        <div class="form-grid">
+          <div class="field">
+            <label>Select Van</label>
+            <select id="camVanSelect" class="inp">
+              <option value="">— Select van —</option>
+              <option value="V001">Van Alpha</option>
+              <option value="V002">Van Beta</option>
+              <option value="V003">Van Gamma</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Reason</label>
+            <input id="camReason" class="inp" placeholder="e.g. Suspicious delay">
+          </div>
+        </div>
+        <button class="btn-danger" onclick="activateCamera()" style="margin-top:8px">📡 Activate Camera</button>
+        <div id="cameraStatus" style="margin-top:16px"></div>
+        <div id="cameraFeed" style="display:none;margin-top:16px">
+          <div class="camera-feed">
+            <div class="feed-header">
+              <span class="rec-dot"></span> LIVE FEED — <span id="feedVanName">Van Alpha</span>
+              <span style="margin-left:auto;font-size:11px;color:var(--muted)">ACCESS CONTROLLED</span>
+            </div>
+            <div class="feed-body">
+              <div class="feed-noise"></div>
+              <div class="feed-overlay">📷 CAMERA ACTIVE<br><small>Feed Access Granted to Admin</small></div>
+            </div>
+            <div class="feed-footer">
+              <span class="mono" id="feedTime">00:00:00</span>
+              <span class="log-pill">RECORDING</span>
+            </div>
+          </div>
+          <button class="btn-sm danger-btn" onclick="hideFeed()" style="margin-top:8px">Deactivate Camera View</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- COL 2: Active Rides + Events -->
+    <div class="admin-col">
+
+      <!-- ACTIVE RIDES -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🛣️ ACTIVE RIDES</div>
+          <div class="card-badge info" id="activeCount">0</div>
+        </div>
+        <div id="ridesList">
+          <div class="empty-state">No active rides.</div>
+        </div>
+      </div>
+
+      <!-- WAITLIST -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">⏳ WAITLIST</div>
+          <div class="card-badge warn" id="waitCount">0</div>
+        </div>
+        <div id="waitList">
+          <div class="empty-state">Waitlist is empty.</div>
+        </div>
+      </div>
+
+      <!-- HIGH DEMAND ZONES -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🌡️ HIGH DEMAND ZONES</div>
+          <div class="card-badge warn">HEATMAP</div>
+        </div>
+        <div id="heatmap" class="heatmap-grid"></div>
+      </div>
+
+    </div>
+
+    <!-- COL 3: Safety Log -->
+    <div class="admin-col">
+      <div class="card" style="height:calc(100% - 0px)">
+        <div class="card-header">
+          <div class="card-title">📋 SAFETY EVENT LOG</div>
+          <button class="btn-sm" onclick="refreshDash()">↻ Live</button>
+        </div>
+        <div id="safetyLog" class="log-list tall-log"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<script src="/static/script.js"></script>
+<script>
+  let dashInterval = null;
+
+  async function refreshDash() {
+    const res = await api('/api/admin/dashboard', null, 'GET');
+    if (!res.success) return;
+
+    // Stats
+    document.getElementById('statActive').textContent = res.active_rides.length;
+    document.getElementById('statWait').textContent = res.waitlist.length;
+    document.getElementById('statDone').textContent = res.completed_count;
+    document.getElementById('statPanic').textContent = res.unresolved_panics.length;
+    document.getElementById('statTotal').textContent = res.total_rides;
+
+    // Panic banner
+    const hasPanic = res.unresolved_panics.length > 0;
+    document.getElementById('panicBanner').style.display = hasPanic ? 'block' : 'none';
+    document.getElementById('panicIndicator').style.display = hasPanic ? 'flex' : 'none';
+
+    // Vans
+    let vanHtml = '';
+    Object.entries(res.vans).forEach(([vid, van]) => {
+      const statusCls = van.status === 'available' ? 'safe' : van.status === 'en_route' ? 'info' : van.status === 'offline' ? 'muted-badge' : 'warn';
+      const camIcon = van.camera_active ? '📡' : '📷';
+      const scoreCls = van.safety_status === 'Safe' ? 'text-safe' : van.safety_status === 'Warning' ? 'text-warn' : 'text-danger';
+      vanHtml += `
+        <div class="van-card">
+          <div class="van-header">
+            <strong>${van.name}</strong>
+            <div class="card-badge ${statusCls}">${van.status.toUpperCase()}</div>
+          </div>
+          <div class="van-details">
+            <span>👤 ${van.driver}</span>
+            <span>📍 ${van.current_location}</span>
+            <span>👥 ${van.passengers.length}/${van.capacity}</span>
+            <span class="${scoreCls}">🛡 ${van.safety_score} — ${van.safety_status}</span>
+            <span>${camIcon} Camera: ${van.camera_active ? '<span class="text-danger">ACTIVE</span>' : 'Standby'}</span>
+            <span>🔄 ${van.route_deviation ? '<span class="text-danger">DEVIATION!</span>' : 'On Route'}</span>
+          </div>
+          <div class="safety-meter" style="margin-top:8px">
+            <div class="safety-bar ${van.safety_status === 'Safe' ? 'safe' : van.safety_status === 'Warning' ? 'warn' : 'risk'}" style="width:${van.safety_score}%"></div>
+          </div>
+        </div>`;
+    });
+    document.getElementById('vanGrid').innerHTML = vanHtml || '<div class="empty-state">No vans registered.</div>';
+
+    // Panic alerts
+    document.getElementById('panicCount').textContent = res.unresolved_panics.length;
+    let panicHtml = '';
+    if (res.panic_alerts.length === 0) {
+      panicHtml = '<div class="empty-state">No panic alerts.</div>';
+    } else {
+      res.panic_alerts.forEach(p => {
+        const resolved = p.resolved;
+        panicHtml += `
+          <div class="panic-card ${resolved ? 'resolved' : 'active-panic'}">
+            <div class="panic-header">
+              <span>${resolved ? '✅' : '🚨'} Alert ${p.id}</span>
+              <span class="card-badge ${resolved ? 'safe' : 'danger'}">${resolved ? 'RESOLVED' : 'ACTIVE'}</span>
+            </div>
+            <div class="panic-details">
+              <div>👤 ${p.student} &nbsp; 🚐 ${p.van_id || 'Unknown'}</div>
+              <div>📍 ${p.pickup} → ${p.drop}</div>
+              <div class="mono small">⏰ ${p.time} &nbsp; 📷 Camera: ${p.camera_activated ? 'Activated' : 'N/A'}</div>
+              <div class="mono small">📞 ${p.contact_alerted}</div>
+            </div>
+            ${!resolved ? `<button class="btn-sm" onclick="resolvePanic('${p.id}')" style="margin-top:8px">✅ Mark Resolved</button>` : ''}
+          </div>`;
+      });
+    }
+    document.getElementById('panicList').innerHTML = panicHtml;
+
+    // Active rides
+    document.getElementById('activeCount').textContent = res.active_rides.length;
+    let ridesHtml = '';
+    if (res.active_rides.length === 0) {
+      ridesHtml = '<div class="empty-state">No active rides.</div>';
+    } else {
+      res.active_rides.forEach(r => {
+        const stCls = r.status === 'boarded' ? 'safe' : r.status === 'waiting' ? 'warn' : 'info';
+        ridesHtml += `
+          <div class="ride-row">
+            <div class="ride-row-left">
+              <span class="mono small">${r.id}</span>
+              <strong>${r.name}</strong>
+              <span class="small text-muted">${r.student_id}</span>
+            </div>
+            <div class="ride-row-mid">
+              <span>📍 ${r.pickup} → ${r.drop}</span>
+              <span class="mono small">🚐 ${r.van_id || 'Waitlist'}</span>
+            </div>
+            <div class="card-badge ${stCls}">${r.status.toUpperCase()}</div>
+          </div>`;
+      });
+    }
+    document.getElementById('ridesList').innerHTML = ridesHtml;
+
+    // Waitlist
+    document.getElementById('waitCount').textContent = res.waitlist.length;
+    let waitHtml = '';
+    if (res.waitlist.length === 0) {
+      waitHtml = '<div class="empty-state">Waitlist empty.</div>';
+    } else {
+      res.waitlist.forEach(r => {
+        waitHtml += `<div class="ride-row"><div>${r.name}</div><div>${r.pickup} → ${r.drop}</div><div class="card-badge warn">WAITING</div></div>`;
+      });
+    }
+    document.getElementById('waitList').innerHTML = waitHtml;
+
+    // Heatmap
+    let hmHtml = '';
+    if (res.high_demand_zones.length === 0) {
+      hmHtml = '<div class="empty-state">No data yet.</div>';
+    } else {
+      const max = res.high_demand_zones[0][1] || 1;
+      res.high_demand_zones.forEach(([loc, count]) => {
+        const pct = Math.round((count/max)*100);
+        const heat = pct > 75 ? 'heat-high' : pct > 40 ? 'heat-mid' : 'heat-low';
+        hmHtml += `
+          <div class="heat-row">
+            <div class="heat-loc">${loc}</div>
+            <div class="heat-bar-wrap">
+              <div class="heat-bar ${heat}" style="width:${pct}%"></div>
+            </div>
+            <div class="heat-count">${count}</div>
+          </div>`;
+      });
+    }
+    document.getElementById('heatmap').innerHTML = hmHtml;
+
+    // Safety log
+    let logHtml = '';
+    const events = [...res.safety_events].reverse();
+    events.forEach(e => {
+      const typeCls = e.type.includes('PANIC') ? 'log-danger' : e.type.includes('CAMERA') ? 'log-warn' : e.type.includes('DEVIATION') ? 'log-warn' : 'log-info';
+      logHtml += `<div class="log-item ${typeCls}">
+        <span class="log-time">${e.time}</span>
+        <span class="log-type">${e.type}</span>
+        ${e.van_id ? `<span class="mono small">${e.van_id}</span>` : ''}
+        ${e.detail}
+      </div>`;
+    });
+    document.getElementById('safetyLog').innerHTML = logHtml || '<div class="empty-state">No events yet.</div>';
+  }
+
+  async function resolvePanic(alertId) {
+    const res = await api('/api/admin/resolve_panic', { alert_id: alertId });
+    if (res.success) {
+      showToast(res.message, 'success');
+      refreshDash();
+    }
+  }
+
+  async function activateCamera() {
+    const vanId = document.getElementById('camVanSelect').value;
+    const reason = document.getElementById('camReason').value.trim();
+    if (!vanId) { showToast('Select a van', 'warn'); return; }
+    if (!reason) { showToast('Enter reason for activation', 'warn'); return; }
+
+    const res = await api('/api/admin/activate_camera', { van_id: vanId, reason });
+    if (res.success) {
+      showToast(res.message, 'success');
+      const statusEl = document.getElementById('cameraStatus');
+      statusEl.innerHTML = `<div class="alert-box warn">
+        📡 Camera ACTIVATED — ${res.log.time}<br>
+        Reason: ${res.log.reason}<br>
+        <small class="mono">Access logged for audit trail</small>
+      </div>`;
+      // Show simulated feed
+      document.getElementById('cameraFeed').style.display = 'block';
+      document.getElementById('feedVanName').textContent = document.getElementById('camVanSelect').options[document.getElementById('camVanSelect').selectedIndex].text;
+      startFeedTimer();
+      refreshDash();
+    }
+  }
+
+  let feedTimer = null;
+  function startFeedTimer() {
+    let s = 0;
+    if (feedTimer) clearInterval(feedTimer);
+    feedTimer = setInterval(() => {
+      s++;
+      const h = String(Math.floor(s/3600)).padStart(2,'0');
+      const m = String(Math.floor((s%3600)/60)).padStart(2,'0');
+      const sec = String(s%60).padStart(2,'0');
+      document.getElementById('feedTime').textContent = `${h}:${m}:${sec}`;
+    }, 1000);
+  }
+  function hideFeed() {
+    document.getElementById('cameraFeed').style.display = 'none';
+    if (feedTimer) clearInterval(feedTimer);
+  }
+
+  // Auto-refresh every 5 seconds
+  refreshDash();
+  dashInterval = setInterval(refreshDash, 5000);
+  updateClock();
+  setInterval(updateClock, 1000);
+</script>
+</body>
+</html>
